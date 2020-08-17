@@ -18,5 +18,5 @@ variable "env" {
 # Kubernetes variables
 ##############################################################
 variable "image_version" {
-  default = "v0.0.3"
+  default = "v0.1.0"
 }

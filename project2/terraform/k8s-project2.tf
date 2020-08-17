@@ -29,13 +29,23 @@ resource "kubernetes_pod" "vulnerability_report" {
       name  = "vulnerability-report"
 
       env {
-        name  = "bucket"
-        value = aws_s3_bucket.vulnerability_reporting.id
+        name  = "polling_timeout"
+        value = 300
       }
 
       env {
         name  = "kms_key_id"
         value = aws_kms_key.infra.key_id
+      }
+
+      env {
+        name  = "queue_url"
+        value = aws_sqs_queue.vulnerability_reporting.id
+      }
+
+      env {
+        name  = "region"
+        value = var.region
       }
     }
   }

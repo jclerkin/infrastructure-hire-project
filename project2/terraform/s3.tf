@@ -77,3 +77,11 @@ data "aws_iam_policy_document" "vulnerability_reporting" {
     }
   }
 }
+
+# Block public accesss
+resource "aws_s3_bucket_public_access_block" "vulnerability_reporting" {
+  bucket = aws_s3_bucket.vulnerability_reporting.id
+
+  block_public_acls   = true
+  block_public_policy = true
+}
