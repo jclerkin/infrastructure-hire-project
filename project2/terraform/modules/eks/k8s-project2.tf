@@ -6,7 +6,7 @@ resource "null_resource" "update_config_map_aws_auth" {
   depends_on = [module.eks]
 
   provisioner "local-exec" {
-    command = "aws eks update-kubeconfig --name ${local.cluster_name}"
+    command = "aws eks update-kubeconfig --name ${var.cluster_name}"
   }
 }
 
@@ -14,7 +14,7 @@ resource "null_resource" "update_config_map_aws_auth" {
 resource "kubernetes_pod" "vulnerability_report" {
   metadata {
     name      = "${var.project}-vulnerability-report"
-    namespace = local.k8s_service_account_namespace
+    namespace = var.k8s_service_account_namespace
 
     annotations = {
       "iam.amazonaws.com/role" = module.iam_assumable_role_s3.this_iam_role_arn
@@ -22,10 +22,10 @@ resource "kubernetes_pod" "vulnerability_report" {
   }
 
   spec {
-    service_account_name = local.k8s_service_account_name
+    service_account_name = var.k8s_service_account_name
     automount_service_account_token = true
     container {
-      image = "${aws_ecr_repository.vulnerability_reporting.repository_url}:${var.image_version}"
+      image = "${data.aws_ecr_repository.vulnerability_reporting.repository_url}:${var.image_version}"
       name  = "vulnerability-report"
 
       env {
@@ -35,12 +35,12 @@ resource "kubernetes_pod" "vulnerability_report" {
 
       env {
         name  = "kms_key_id"
-        value = aws_kms_key.infra.key_id
+        value = data.aws_kms_key.infra.key_id
       }
 
       env {
         name  = "queue_url"
-        value = aws_sqs_queue.vulnerability_reporting.id
+        value = data.aws_sqs_queue.vulnerability_reporting.id
       }
 
       env {

@@ -1,8 +1,13 @@
 # SQS queue
 resource "aws_sqs_queue" "vulnerability_reporting" {
   name                              = "${var.project}-vulnerability-reporting"
-  kms_master_key_id                 = aws_kms_key.infra.arn
+  kms_master_key_id                 = data.aws_kms_key.infra.arn
   kms_data_key_reuse_period_seconds = 300
+}
+
+resource "aws_sqs_queue_policy" "vulnerability_reporting" {
+  queue_url = aws_sqs_queue.vulnerability_reporting.id
+  policy = data.aws_iam_policy_document.sqs.json
 }
 
 #	The role policy giving the lambda access to the S3 bucket
@@ -11,36 +16,6 @@ resource "aws_iam_role_policy" "s3tosqsqueue" {
   role    = aws_iam_role.s3tosqsqueue.id
   policy  = data.aws_iam_policy_document.s3tosqsqueue.json
 }
-
-data "aws_iam_policy_document" "s3tosqsqueue" {
-  statement {
-    sid       = "logs"
-    effect    = "Allow"
-    actions   = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
-    ]
-
-    resources = [
-      "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:*"
-    ]
-  }
-
-  statement {
-    sid       = "s3"
-    effect    = "Allow"
-    actions   = [
-      "s3:Get*",
-      "s3:Describe*"
-    ]
-
-    resources = [
-      aws_s3_bucket.vulnerability_reporting.arn
-    ]
-  }
-}
-
 
 resource "aws_iam_role" "s3tosqsqueue" {
   name = "s3tosqsqueue-lambda-${var.project}-vulnerability-reporting-role"
@@ -54,24 +29,9 @@ resource "aws_iam_role" "s3tosqsqueue" {
   }
 }
 
-data "aws_iam_policy_document" "s3tosqsqueue_trust" {
-  statement {
-    sid       = "assume"
-    effect    = "Allow"
-    actions   = [
-      "sts:AssumeRole"
-    ]
-
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
-  }
-}
-
 resource "aws_kms_grant" "s3tosqsqueue" {
   name              = "s3tosqsqueue-lambda-${var.project}-vulnerability-reporting-kms-grant"
-  key_id            = aws_kms_key.infra.arn
+  key_id            = data.aws_kms_key.infra.arn
   grantee_principal = aws_iam_role.s3tosqsqueue.arn
   operations        = ["Encrypt", "Decrypt", "GenerateDataKey"]
 }
@@ -87,12 +47,12 @@ resource "aws_lambda_permission" "s3tosqsqueue" {
   function_name = aws_lambda_function.s3tosqsqueue.arn
   principal     = "s3.amazonaws.com"
   qualifier     = aws_lambda_alias.s3tosqsqueue.name
-  source_arn    = aws_s3_bucket.vulnerability_reporting.arn
+  source_arn    = data.aws_s3_bucket.vulnerability_reporting.arn
   statement_id  = "AllowExecutionFromS3Bucket"
 }
 
 resource "aws_s3_bucket_notification" "s3tosqsqueue" {
-  bucket = aws_s3_bucket.vulnerability_reporting.id
+  bucket = data.aws_s3_bucket.vulnerability_reporting.id
   lambda_function {
       lambda_function_arn = aws_lambda_function.s3tosqsqueue.arn
       events              = ["s3:ObjectCreated:*"]

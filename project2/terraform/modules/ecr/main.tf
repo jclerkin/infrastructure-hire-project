@@ -1,4 +1,18 @@
 ##############################################################
+#  ECR Repo for Vulnerability reporting container
+##############################################################
+resource "aws_ecr_repository" "vulnerability_reporting" {
+  name = "${var.project}-vulnerability-report"
+
+  tags = {
+    name      = "${var.project}-vulnerability-reporting"
+    project   = var.project
+    terraform = "true"
+    env       = var.env
+  }
+}
+
+##############################################################
 #  IAM user for github actions
 ##############################################################
 # User
@@ -29,7 +43,7 @@ resource "aws_ssm_parameter" "github_access_key" {
   name        = "/${var.project}/github_access_key"
   description = "github actions access key for ${var.project}"
   type        = "SecureString"
-  key_id      = aws_kms_key.infra.arn
+  key_id      = data.aws_kms_key.infra.arn
   value       = aws_iam_access_key.github_actions.id
 
   tags = {
@@ -44,7 +58,7 @@ resource "aws_ssm_parameter" "github_access_secret" {
   name        = "/${var.project}/github_access_secret"
   description = "github actions secret key for ${var.project}"
   type        = "SecureString"
-  key_id      = aws_kms_key.infra.arn
+  key_id      = data.aws_kms_key.infra.arn
   value       = aws_iam_access_key.github_actions.secret
 
   tags = {
