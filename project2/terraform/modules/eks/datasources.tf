@@ -73,3 +73,11 @@ data "aws_sqs_queue" "vulnerability_reporting" {
 data "aws_s3_bucket" "vulnerability_reporting" {
   bucket = "${var.project}-vulnerability-reporting"
 }
+
+# Metrics server
+data "template_file" "values_metrics_server" {
+  template = file("values_metrics_server.yaml.tpl")
+  vars = {
+    metrics_server_version = "v0.3.6"
+  }
+}
